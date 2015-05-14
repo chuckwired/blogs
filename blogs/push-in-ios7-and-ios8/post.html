@@ -33,7 +33,7 @@ return true
 
 <pre><code class='swift'>
 func getMajorSystemVersion() -> Int {
-    return String(Array(UIDevice.currentVersion)[0]).toInt()
+    return String(Array(UIDevice.currentDevice.systemVersion)[0]).toInt()!
 }
 </code>
 </pre>
@@ -87,14 +87,26 @@ Ah, sweet simplicity. Now all we need to do is implement the delegates:
 func application(application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: NSData) {
 //Process the deviceToken and send it to your server
 }
+
 func application(application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: NSError) {
 
-NSLog("Failed to get token; error: %@", error) //Log an error, but user doesn't need to know
+NSLog("Failed to get token; error: %@", error) //Log an error for debugging purposes, user doesn't need to know
+}
 </code></pre>
+
+One thing you may not realise at first is that the deviceToken object, when converted to a <code>String</code>, looks something like this:
+<code>&lt;XXXXX XXXXX XXXXX XXXXX XXXXX&gt;</code>
+To register that token on your server and send out notifications you may want to clean it up first before saving, sending etc. I performed a simple regex and replace:
+
+<pre><code class='swift'>
+let trimEnds = deviceToken.description.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: "<>"))
+let cleanToken = trimEnds.stringByReplacingOccurrencesOfString(" ", withString: "", options: nil)
+</pre>
+
 And you're set! Since the device token can change e.g. when restoring a backup to a different device, it is important to register with your server back-end in the app delegate regularly. The above should suffice.</p>
 <hr>
 <p><br><strong>CONCLUSION:</strong></p>
-<p>Now it’s time to say goodbye and wrap up your post. Remind your readers of your key takeaway, reiterate what your readers need to do to get the desired result, and ask a question about how they see the topic to encourage comments and conversation. Don't forget to add a <a href="https://app.hubspot.com/l/cta">Call-to-Action</a> to turn your blog post into a marketing machine!</p>
-<p>Congratulations! What a lovely how-to post you've created.&nbsp;</p>
+<p>In this post we discovered how to identify which major version of iOS a device is running, and handle different remote registration logic accordingly using <code>Swift</code>. We did so using a robust method that would gracefully handle itself if no version was found, and logged any failures that may happen at runtime.
+</p>
 <br><hr>
 <p>&nbsp;</p>
