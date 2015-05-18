@@ -1,26 +1,30 @@
-<hr>
 <p>If you're like me you often want to create your applications to handle a variety of different configurations or situations. Let's face it, it feels good to watch something you created handle whatever gets thrown at it. And that's exactly what we're going to do here.
 </p>
 <p>Most of the examples floating about the internet for push notifications are in Objective-C and even if they're in Swift, they only cover iOS 7 or 8 but not handling both if you'd like to support it. This blog post will give you a simple step by step showing how to identify between iOS7 and iOS8 and register for push notifications accordingly.
 </p>
+<!--more-->
 <hr>
 <h2>Step 1: Getting Started</h2>
 <p>First we assume you already have an application you're working on or have completed (perhaps for some time) written in Swift. Go ahead and open up the 'AppDelegate.swift' file and checkout the first function:
     
 </p>
-<pre><code class='swift'>func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -&gt; Bool {
-// Override point for customization after application launch.
-return true
+<pre><code class='swift'>func application(
+    application: UIApplication, 
+    didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?
+) -&gt; Bool {
+    // Override point for customization after application launch.
+    return true
+}
 </code></pre>
 <p>This is the point at which you need to handle iOS 7 or 8. To keep this simple, let's see how to solve this with pseudo code:
 </p>
 <pre><code>if(iOS version is 7 or below){
-//register for remote notifications using iOS 7 calls
+    //register for remote notifications using iOS 7 calls
 } else {
-//register using iOS 8 calls
+    //register using iOS 8 calls
 }
 </code></pre>
-<h2>Step 2: Distinguishing the OS version</h2>
+<h2>Step 2: Distinguishing the iOS version</h2>
 <p>When I was trying to figure out how to make this distinction it wasn't so obvious until I actually found the solution. Why not simply just ask the system what iOS version it's running? Let's try this on my iPhone 5 running 7.1.1.
 </p>
 <pre><code class='swift'>UIDevice.currentDevice().systemVersion //Returns 7.1.1</code></pre>
@@ -84,23 +88,36 @@ Ah, sweet simplicity. Now all we need to do is implement the delegates:
 <li dir="ltr">didFailToRegisterForRemoteNotificationsWithError</li>
 </ol>
 <pre><code class='swift'> 
-func application(application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: NSData) {
-//Process the deviceToken and send it to your server
+func application(
+    application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: NSData
+) {
+    //Process the deviceToken and send it to your server
 }
 
-func application(application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: NSError) {
-
-NSLog("Failed to get token; error: %@", error) //Log an error for debugging purposes, user doesn't need to know
+func application(
+    application: UIApplication,
+    didFailToRegisterForRemoteNotificationsWithError error: NSError
+) {
+    //Log an error for debugging purposes, user doesn't need to know
+    NSLog("Failed to get token; error: %@", error) 
 }
 </code></pre>
 
 One thing you may not realise at first is that the deviceToken object, when converted to a <code>String</code>, looks something like this:
-<code>&lt;XXXXX XXXXX XXXXX XXXXX XXXXX&gt;</code>
+&nbsp; &nbsp;
+<p><code>&lt;XXXXX XXXXX XXXXX XXXXX XXXXX&gt;</code></p>
 To register that token on your server and send out notifications you may want to clean it up first before saving, sending etc. I performed a simple regex and replace:
 
 <pre><code class='swift'>
-let trimEnds = deviceToken.description.stringByTrimmingCharactersInSet(NSCharacterSet(charactersInString: "<>"))
-let cleanToken = trimEnds.stringByReplacingOccurrencesOfString(" ", withString: "", options: nil)
+let trimEnds = {
+    deviceToken.description.stringByTrimmingCharactersInSet(
+    NSCharacterSet(charactersInString: "<>"))
+}
+let cleanToken = {
+    trimEnds.stringByReplacingOccurrencesOfString(
+    " ", withString: "", options: nil)
+}
 </code>
 </pre>
 
