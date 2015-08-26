@@ -1,0 +1,95 @@
+Intro to Ansible: A Developer's Account
+<p>
+After nearly a year working as a developer on a few interesting projects and going through a Datastax Cassandra bootcamp, I was intrigued and in awe of the powerful possibilities offered by using best DevOps practices. One of my first tasks to enter the land of DevOps involved learning to use a new tool called <a href="http://www.ansible.com/">Ansible</a> to launch a small AWS (Amazon Web Services) stack hosting a simple HTML application. By the end of this post you will learn a little more about Ansible and what it is like diving into and learning how to "do" DevOps.
+</p>
+<!-- more -->
+<h2>What is Ansible</h2>
+<p> 
+<a href="http://www.ansible.com/">Ansible</a> is an open source DevOps tool used for configuration management and to setup tens, hundreds or thousands of external computers from any machine, easily from any laptop. In comparison to other tools such as Chef or Puppet, Ansible aims to provide simple large scale orchestration of systems in a lightweight package over SSH rather than a full solution including system monitoring. Think of Ansible as a higher-level, idempotent version of bash scripts that is a lot easier to rapidly develop and manage, especially given the language choice of YAML. 
+</p>
+<img src="https://cloud.githubusercontent.com/assets/7658988/9495746/fd246262-4c04-11e5-9300-3d48d1ebd243.png">
+<center><b>A short excerpt of Ansible code using the YAML language</b></center>
+
+<h2>Before You Start</h2>
+<p> 
+Whilst we would like to dive straight in and start writing Ansible code, there's just a few configuration gotchas! This is mostly basic SSH access to AWS resources and configuring your system a little so that Ansible can run on your localhost, particularly for OSX. We do this manually instead of instructing Ansible to do this for us, as we want to limit the amount of sensitive information we write out into our files. Make sure you configure your aws-cli with the correct keys, create your keypair and download it to somewhere accessible (usually ~/.ssh/aws_key_pair.pem). Remember this for later.
+</p>
+
+<pre><code class='bash'>
+
+# Configure your AWS account:
+aws configure
+
+# Configure your Key ID and Access Key, the rest
+# can stay at your default values.
+#
+# Output:
+# AWS Access Key ID [********************]:
+# AWS Secret Access Key [********************]:
+# Default region name [eu-west-1]:
+# Default output format [json]:
+# 
+
+# Download your AWS key-pair and put it somewhere for later
+cp ~/Desktop/demo-aws-key.pem ~/.ssh/demo-aws-key.pem
+
+</code></pre>
+
+<p>
+Also, it is easier to setup the default Ansible inventory (hosts) file in /etc/ansible/hosts:
+</p>
+
+<pre><code class='bash'>
+# /etc/ansible/hosts:
+
+localhost ansible_connection=local
+</code></pre>
+
+<p>
+Try running this simple Ansible command now:<br>
+<code class='bash'>ansible localhost -m shell -a "echo My first Ansible Task"</code>
+</p>
+
+<h2>Playbooks</h2>
+<p> 
+The bread and butter of your Ansible code will come in the form of playbooks - these are where you setup different 'plays' of commands on different hosts organised using YAML syntax. At first it's good to experiment with localhost but you'll come to realise you can connect to different machines, and configure a group in parallel for example. Common elements you will become familiar with are:
+
+	<li><b>Begin indicator: </b>This is just three hyphens (---) at the start of the file - it's good practice to start your playbooks like this (if you didn't notice it, check the first image!).</li>
+	<li><b>hosts: </b>Indicates to Ansible the machine(s) you want to perform operations on, available from /etc/ansible/hosts or your inventory file</li>
+	<li><b>name: </b>Gives a human descriptor for the task/command being performed when a play is executed</li>
+	<li><b>shell: </b>Shell is a module that allows you to perform shell commands on the connected host - there are many other code modules such as copy, git and debug.</li>
+	<li><b>vars: </b>A list of variables you'd like to use for that play, or to pass to an 'include' file.</li>
+	<li><b>include: </b>Allows you to run an external set of tasks.</li>
+	<li><b>{{ parameter }}: </b>Anything wrapped in double curly braces is referencing a parameter.</li>
+	<li><b>Inventory file: </b>Essentially this is an Ansible copy of your /etc/hosts file (!)</li>
+</p>
+
+<h2>Modules</h2>
+<p> 
+Built into Ansible are a variety of very useful modules that essentially are self contained playbooks that allow you to reproduce an action or behaviour in a more controlled manner. 
+</p>
+
+<h2>Roles</h2>
+<p> 
+body
+</p>
+
+<h2>Putting it Together</h2>
+<p> 
+body
+</p>
+
+
+<pre><code class='swift'>
+	func printStuff(s: String) = {
+		println("Hello world!");
+	}
+</code></pre>
+
+<h2>Summary</h2>
+<p>
+	my summary.
+</p>
+<p>
+A copy of the full solution is available from my Github account: <a href="https://github.com/chuckwired/ansible-demo/blob/master/chuck-demo.yml">chuckwired.</a>
+</p>
