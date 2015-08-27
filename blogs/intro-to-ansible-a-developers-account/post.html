@@ -1,6 +1,5 @@
-Intro to Ansible: A Developer's Account
 <p>
-After nearly a year working as a developer on a few interesting projects and going through a Datastax Cassandra bootcamp, I was intrigued and in awe of the powerful possibilities offered by using best DevOps practices. One of my first tasks to enter the land of DevOps involved learning to use a new tool called <a href="http://www.ansible.com/">Ansible</a> to launch a small AWS (Amazon Web Services) stack hosting a simple HTML application. By the end of this post you will learn a little more about Ansible, steps taken to create this stack launcher and what it is like diving into and learning how to "do" DevOps.
+After nearly a year working as a developer on a few interesting projects and going through a Datastax Cassandra bootcamp, I was intrigued and in awe of the powerful possibilities offered by using best DevOps practices. One of my first tasks to enter the land of DevOps involved learning to use a new tool called <a href="http://www.ansible.com/">Ansible</a> to launch a small AWS (Amazon Web Services) stack hosting a simple HTML application. By the end of this post you will learn a little more about Ansible, its building blocks, steps taken to create this stack launcher and what it is like diving into and learning how to "do" DevOps.
 </p>
 <!-- more -->
 <h2>What is Ansible</h2>
@@ -51,11 +50,11 @@ Try running this simple Ansible command now:<br>
 
 <h2>Modules</h2>
 <p> 
-Built into Ansible are a variety of very useful modules that essentially are self contained playbooks or tasks that allow you to reproduce an action or behaviour in a more controlled manner. "Shell" is the first module that most can easily pick up, but one thing you'll learn is that using existing modules is easier than reproducing your deployment and configuraiton steps using shell calls. For example I tried to add the hostname for an EC2 instance to my inventory file dynamically using shell calls, before I realised there was an "add_hosts" module that would neatly do it for me. The repeatability and clarity you get using Ansible is worth searching for first.
+Built into Ansible are a variety of very useful modules that essentially are self contained playbooks or tasks that allow you to reproduce an action or behaviour in a more controlled manner. "Shell" is the first module that most can easily pick up, but one thing you'll learn is that using existing modules is easier than reproducing your deployment and configuration steps using shell calls. For example I tried to add the hostname for an EC2 instance to my inventory file dynamically using shell calls, before I realised there was an "add_hosts" module that would neatly do it for me. The repeatability and clarity you get using Ansible is worth searching for first.
 </p>
 
+<b>Compare the shell version here...</b>
 <pre><code class='yaml'>
-# Compare the shell version here...
 # 1. Find the line number if exists
 - shell: grep {{ instance_name }}.server /etc/ansible/hosts
   register: grep_server_name
@@ -72,8 +71,10 @@ Built into Ansible are a variety of very useful modules that essentially are sel
 # 2b. If not exists, just add to the bottom of file
 - shell: echo "{{ instance_name }}.server ansible_connection={{ ec2_address.stdout }}" >> /etc/ansible/hosts
   when: server_line_number|skipped
+</code></pre>
 
- # ...with the module version here:
+<b>With the module version...</b>
+<pre><code class='yaml'>
 - name: Add instance to hosts
   add_host: 
   	hostname: "{{ ec2_address.stdout }}"
@@ -141,29 +142,45 @@ For example if you are using the 'copy' module, the src file you want to copy ma
 
 <h2>Putting it Together</h2>
 <p> 
-Now that I've given you an overview of the building blocks we'll need to construct this launcher let's go step by step through the process - I won't copy paste all the code here as the idea is to give a higher level picture. Any tasks mentioned below are linked to their read me page.
+Now that I've given you an overview of the building blocks we'll need to construct this launcher let's go step by step through the process - I won't copy paste all the code here as the idea is to give a higher level picture instead. Any tasks mentioned below are linked to their read me page.
 </p>
 
 <h3>1. Launch the instances</h3>
-Our instances don't exist so logically we have to start with localhost - we can use tasks <a href="http://docs.ansible.com/ansible/ec2_module.html">"ec2"</a> to create an ec2 instance and <a href="http://docs.ansible.com/ansible/ec2_elb_lb_module.html">"ec2_elb_lb"</a> to create an elastic load balancer which we will configure momentarily. My EC2 instance is running Cent OS 6, just browse the Amazon Images (AMI's) and pick one. I've configured this into a "stack-launcher" role so the syntax is a lot cleaner, and any variables I need are in a main.yml file in the "vars" folder. Note that you don't need to only have a single main.yml that is simply the default, you can have as many as you like but you'll need to "include_vars: vars/credential_vars.yml" to do so.
+<p>
+Our instances don't exist so logically we have to start with localhost - we can use tasks <a href="http://docs.ansible.com/ansible/ec2_module.html">"ec2"</a> to create an ec2 instance and <a href="http://docs.ansible.com/ansible/ec2_elb_lb_module.html">"ec2_elb_lb"</a> to create an elastic load balancer which we will configure momentarily. My EC2 instance is running Cent OS 6, just browse the Amazon Images (AMI's) and pick one. I've configured this into a "stack-launcher" role so the syntax is a lot cleaner, and any variables I need are in a main.yml file in the "vars" folder. Note that you don't need to only have a single main.yml that is simply the default, you can have as many as you like but you'll need to <code class='bash'>include_vars: vars/credential_vars.yml</code> to do so.
+</p>
 
 <h3>2. Configure a Security Group</h3>
-We've created the launcher now and we will have a stack, but it wasn't till much later I realised we should have configured a security group to open up the correct ports. You can use the <a href="http://docs.ansible.com/ansible/ec2_group_module.html">"ec2_group"</a> module to open up ports 22 (so we can SSH into it), 80 and 443 to allow us to install OS updates and pull installables from the cloud.
+<p>
+We've created the launcher now and we will have a stack, but it wasn't till much later I realised we should have configured a security group to open up the correct ports. You can use the <a href="http://docs.ansible.com/ansible/ec2_group_module.html">"ec2_group"</a> module to add rules and open up ports 22 (so we can SSH into it), 80 and 443 to allow us to install OS updates and pull installables from the cloud. Amend the instances in the previous step to use this new security group.
+</p>
 
 <h3>3. Export the newly created hosts</h3>
-Now that we've launched them with the correct security group we need to export the instance IP/DNS so that we can access it in the next step. Using the module <a href="">"add_host"</a> in conjunction with AWS CLI we can figure out the IP/DNS and register it ready for us to use.
+<p>
+Now that we've launched them with the correct security group we need to export the instance IP/DNS so that we can access it in the next step. Using the module <a href="">"add_host"</a> in conjunction with AWS CLI we can figure out the IP/DNS and register it ready for us to use for this run.
+</p>
 
 <h3>4. Connect to the instances and apply 'role'</h3>
-With the exported instance name we can use them as a host i.e. "host: my_ec2_instance" and the way I've setup my demo project is to apply the role "nginx". Inside the roles/nginx folder there are a set of tasks in the tasks folder that are used to setup the instance as if we were logged into it.
+<p>
+With the exported instance name we can use them as a host i.e. <code class='bash'>host: my_ec2_instance</code> and the way I've setup my demo project is to apply the role "nginx". Inside the roles/nginx folder there are a set of tasks in the tasks folder that are used to setup the instance as if we were logged into it.
+</p>
 
-Installing nginx is simple with the "yum" module since I've configured a CentOS image with the "state=present" tag, after configuring the right repository and using "service" to ensure it's running (state=started). This way if I run the playbook again, Ansible will check that nginx is installed and it's running. Neat!
+<p>
+Installing nginx is simple with the <a href="http://docs.ansible.com/ansible/yum_module.html">"yum"</a> module since I've configured a CentOS image with the "state=present" tag, after configuring the right repository and using <a href="http://docs.ansible.com/ansible/service_module.html">"service"</a> to ensure it's running (state=started). This way if I run the playbook again, Ansible will check that nginx is installed and it's running. Neat!
+</p>
 
-An application also lives here in <pre>/usr/share/nginx/html</pre> so using the <a href="http://docs.ansible.com/ansible/git_module.html">"git"</a> module I could very easily copy over a project hosted in the cloud and share some HTML app.
+<p>
+An application also lives here in <code class='bash'>/usr/share/nginx/html</code> so using the <a href="http://docs.ansible.com/ansible/git_module.html">"git"</a> module I could very easily copy over a project hosted in the cloud and share some HTML app.
+</p>
 
+<p>
 Additionally you can copy pre-baked configuration files that you can copy over to the instance from the "files" directory of your role and use the "copy" task. I have stuck with the defaults for demonstration purposes but I've commented my copy tasks out and it's possible to have development versus production configurations for example.
+</p>
 
 <h3>5. Optionally output the ELB DNS at the end!</h3>
+<p>
 Once it's launched that's all great, however it would be nice to get the domain name of the load balancer so we can check it out straight away without logging into the AWS management console. In a nutshell you only need to filter out the ELB information using AWS CLI, parse that as a JSON to get the output you need in the variable directly, then use the <a href="http://docs.ansible.com/ansible/debug_module.html">"debug"</a> module to print it to the terminal so that you can view it (although you can see stdout and stderr using human_log.py, details in the project readme linked below). You should get some output like this at the end:
+</p>
 
 <pre><code class='bash'>
 ok: [localhost] => {
@@ -172,13 +189,21 @@ ok: [localhost] => {
 </code></pre>
 
 <p>
+Now just run <code class='bash'>ansible-playbook my-playbook.yml</code> (once you've written your playbooks) and watch the magic unfold!
+</p>
+
+<h3>Why can't I do this manually?</h3>
+<p>
+Well, you could perform these steps manually by logging into AWS management, setup your instances, SSH into them and configure them yourself but you would need to perform all the steps every single time you wanted to launch this stack. Using this type of approach allows you to run the stack by running a single command from a terminal, and better yet you don't need a dedicated build or launch server to perform deployments. Lastly compared to bash scripts, Ansible playbooks are easy to read, create and maintain and have a more sophisticated variable management even allowing you to encrypt variable files using <a href="http://docs.ansible.com/ansible/playbooks_vault.html">ansible-vault</a>.
+</p>
+<p>
 There's so much more you can do, such as amending the security group afterwards to prevent connections to the internet to your instance and force traffic to go through your load balancer. To scale this up using an auto-scaling group is similar - there are modules to set your launch configuration and configure an auto-scaling group. You would need to instead create some user data to replicate the 'nginx' role on the instances, but other than that the process is very similar in a more controllable, repeatable manner!
 </p>
 
 <h2>Summary</h2>
 <p>
-	In this post we briefly described what Ansible is, the core components and building blocks you'll need to write repeatable processes and went through the logical process of setting up a small AWS stack.
+In this blog post we briefly described what Ansible is, the core components and building blocks you'll need to write repeatable processes and went through the logical process of setting up a small AWS stack. Specifically I wanted to highlight the fact that a lot of the steps that were needed to setup this stack were configured thorugh the use of modules, that will not blindly run things again if they are already configured or setup. Upon reflection development is half the battle - you need to be able to make it available and in some cases, make it available fast. DevOps allows you to robustly deliver software and avoid doing the same work time and time again... without a bash script.
 </p>
 <p>
-A copy of the full solution is available from my Github account: <a href="https://github.com/chuckwired/ansible-demo/blob/master/chuck-demo.yml">chuckwired.</a>
+A copy of the full solution is available from my Github account: <a href="https://github.com/chuckwired/ansible-demo">chuckwired.</a>
 </p>
