@@ -1,14 +1,14 @@
 Intro to Ansible: A Developer's Account
 <p>
-After nearly a year working as a developer on a few interesting projects and going through a Datastax Cassandra bootcamp, I was intrigued and in awe of the powerful possibilities offered by using best DevOps practices. One of my first tasks to enter the land of DevOps involved learning to use a new tool called <a href="http://www.ansible.com/">Ansible</a> to launch a small AWS (Amazon Web Services) stack hosting a simple HTML application. By the end of this post you will learn a little more about Ansible and what it is like diving into and learning how to "do" DevOps.
+After nearly a year working as a developer on a few interesting projects and going through a Datastax Cassandra bootcamp, I was intrigued and in awe of the powerful possibilities offered by using best DevOps practices. One of my first tasks to enter the land of DevOps involved learning to use a new tool called <a href="http://www.ansible.com/">Ansible</a> to launch a small AWS (Amazon Web Services) stack hosting a simple HTML application. By the end of this post you will learn a little more about Ansible, steps taken to create this stack launcher and what it is like diving into and learning how to "do" DevOps.
 </p>
 <!-- more -->
 <h2>What is Ansible</h2>
 <p> 
-<a href="http://www.ansible.com/">Ansible</a> is an open source DevOps tool used for configuration management and to setup tens, hundreds or thousands of external computers from any machine, easily from any laptop. In comparison to other tools such as Chef or Puppet, Ansible aims to provide simple large scale orchestration of systems in a lightweight package over SSH rather than a full solution including system monitoring. Think of Ansible as a higher-level, idempotent version of bash scripts that is a lot easier to rapidly develop and manage, especially given the language choice of YAML. 
+<a href="http://www.ansible.com/">Ansible</a> is an open source DevOps tool used for configuration management and to setup tens, hundreds or thousands of external computers from any machine, easily from any laptop. In comparison to other tools such as Chef or Puppet, Ansible aims to provide simple large scale orchestration of systems in a lightweight package over SSH rather than an all-encompassing solution. Think of Ansible as a higher-level, idempotent version of bash scripts that is a lot easier to rapidly develop and manage, especially given the language choice of YAML. 
 </p>
 <img src="https://cloud.githubusercontent.com/assets/7658988/9495746/fd246262-4c04-11e5-9300-3d48d1ebd243.png">
-<center><b>A short excerpt of Ansible code using the YAML language</b></center>
+<center><b>A short excerpt of Ansible code using the YAML language which runs a shell command, and the OSX say command on your local machine</b></center>
 
 <h2>Before You Start</h2>
 <p> 
@@ -49,20 +49,6 @@ Try running this simple Ansible command now:<br>
 <code class='bash'>ansible localhost -m shell -a "echo My first Ansible Task"</code>
 </p>
 
-<h2>Playbooks</h2>
-<p> 
-The bread and butter of your Ansible code will come in the form of playbooks - these are where you setup different 'plays' of commands on different hosts organised using YAML syntax built from tasks, roles and hosts. At first it's good to experiment with localhost but you'll come to realise you can connect to different machines, and configure a group in parallel for example. Common elements you will become familiar with are:
-
-	<li><b>---: </b>Signals to Ansible the start of a playbook - it's good practice to start your playbooks like this although not compulsory (if you didn't notice it, check the first image!).</li>
-	<li><b>hosts: </b>Indicates to Ansible the machine(s) you want to perform operations on, available from /etc/ansible/hosts or your inventory file</li>
-	<li><b>name: </b>Gives a human descriptor for the task/command being performed when a play is executed</li>
-	<li><b>shell: </b>Shell is a module that allows you to perform shell commands on the connected host - there are many other code modules such as copy, git and debug.</li>
-	<li><b>vars: </b>A list of variables you'd like to use for that play, or to pass to an 'include' file.</li>
-	<li><b>include: </b>Allows you to run an external YAML file with a set of tasks.</li>
-	<li><b>{{ parameter }}: </b>Anything wrapped in double curly braces is referencing a parameter.</li>
-	<li><b>Inventory file: </b>Essentially this is an Ansible copy of your /etc/hosts file (!)</li>
-</p>
-
 <h2>Modules</h2>
 <p> 
 Built into Ansible are a variety of very useful modules that essentially are self contained playbooks or tasks that allow you to reproduce an action or behaviour in a more controlled manner. "Shell" is the first module that most can easily pick up, but one thing you'll learn is that using existing modules is easier than reproducing your deployment and configuraiton steps using shell calls. For example I tried to add the hostname for an EC2 instance to my inventory file dynamically using shell calls, before I realised there was an "add_hosts" module that would neatly do it for me. The repeatability and clarity you get using Ansible is worth searching for first.
@@ -74,12 +60,15 @@ Built into Ansible are a variety of very useful modules that essentially are sel
 - shell: grep {{ instance_name }}.server /etc/ansible/hosts
   register: grep_server_name
   failed_when: "'FAILED' in grep_server_name.stderr"
+
 # 2a. If exists, replace line
 - shell: grep -n {{ instance_name }}.server /etc/ansible/hosts | cut -b 1
   when: "'{{instance_name}}.server' in grep_server_name.stdout"
   register: server_line_number
+
 - shell: sed -i '' '{{ server_line_number.stdout }}s/.*/{{ instance_name }}.server ansible_connection={{ ec2_address.stdout }}/' /etc/ansible/hosts
   when: "'{{instance_name}}.server' in grep_server_name.stdout"
+
 # 2b. If not exists, just add to the bottom of file
 - shell: echo "{{ instance_name }}.server ansible_connection={{ ec2_address.stdout }}" >> /etc/ansible/hosts
   when: server_line_number|skipped
@@ -93,26 +82,102 @@ Built into Ansible are a variety of very useful modules that essentially are sel
 # You can even easily 'group' remote machines using a name identifier!
 </code></pre>
 
+<h2>Playbooks</h2>
+<p> 
+The bread and butter of your Ansible code will come in the form of playbooks - these are where you setup different 'plays' of commands on different hosts organised using YAML syntax built from tasks, roles and hosts. At first it's good to experiment with localhost but you'll come to realise you can connect to different machines, and configure a group of machines concurrently for example. Common elements you will become familiar with are:
+
+	<li><b>---: </b>Signals to Ansible the start of a playbook - it's good practice to start your playbooks like this although not compulsory (if you didn't notice it, check the first image!).</li>
+	<li><b>hosts: </b>Indicates to Ansible the machine(s) you want to perform operations on, available from /etc/ansible/hosts or your inventory file (-i flag from the command line)</li>
+	<li><b>vars: </b>A list of variables you'd like to use for that play, or to pass to an 'include' file.</li>
+	<li><b>tasks: </b>The set of tasks you want to perform on the host, provided by modules such as 'shell'</li>
+	<li><b>name: </b>Gives a human descriptor for the task/command being performed when a play is executed</li>
+	<li><b>shell: </b>Shell is a module that allows you to perform shell commands on the connected host - there are many other code modules such as copy, git and debug.</li>
+	<li><b>include: </b>Allows you to "run in" an external YAML file containing a set of tasks, variables etc.</li>
+	<li><b>{{ parameter }}: </b>Anything wrapped in double curly braces is referencing a parameter.</li>
+	<li><b>Inventory file: </b>Essentially this is an Ansible version of your /etc/hosts file (!) default location is /etc/ansible/hosts although you can specify your own with a -i flag in your terminal</li>
+</p>
+
 <h2>Roles</h2>
 <p> 
-Roles are a bigger building block like 'include', which are general purpose importer for tasks or variables, but with a lot more control over what it can do and is very syntactically clear. For example creating and applying the role "nginx" to a remote machine will do any tasks needed to set it up as an "nginx server". You can create your own with a bit of work or get roles from <a href="https://galaxy.ansible.com/intro">ansible-galaxy</a>.
+Roles are a bigger building block like 'include', allowing you to import tasks (or variables with include_vars), but with a lot more control over what it can do and is very syntactically clear and encapsulates the details. For example creating and applying the role "nginx" to a remote machine will do any tasks needed to set it up as an "nginx server". You can create your own with a bit of work or get roles from <a href="https://galaxy.ansible.com/intro">ansible-galaxy</a>. 
+<p>
+
+<pre><code class='yaml'>
+# I can set 'my-faraway-server' as the nginx server, and
+# amend the nginx role in detail if I need to later on
+---
+ - hosts: my-faraway-server
+   roles:
+     - nginx
+</code></pre>
+
+<p>
+A project directory can be setup with a roles directory which contain the roles you want to use; within each role folder you have various other folders such as tasks, vars, files and so on. Using this convention will allow Ansible to 'see' these roles and allow you to reference the files and folders within that role without absolute or relative referencing.
 </p>
+
+<p>
+For example if you are using the 'copy' module, the src file you want to copy may be relatively located in "../myfiles/example.txt" from your role-tasks.yml, but using this setup you can simply use "src=example.txt" and Ansible will do the lifting for you. There are more folders that help you modularise your roles and there is a really good blog post that goes in more depth by <a href="https://www.digitalocean.com/community/tutorials/how-to-use-ansible-roles-to-abstract-your-infrastructure-environment">Justin Ellingwood</a>.
+</p>
+
+<pre><code class='bash'>
+# Example directory structure of an Ansible project
+├── LICENSE
+├── README.md
+├── ansible.cfg
+├── chuck-demo.yml
+├── plugins
+│   └── human_log.py
+└── roles
+    ├── common
+    │   └── ec2_address.yml
+    ├── nginx
+    │   ├── files
+    │   ├── tasks
+    │   └── vars
+    └── stack-creator
+        ├── tasks
+        └── vars
+</code></pre>
 
 <h2>Putting it Together</h2>
 <p> 
-body
+Now that I've given you an overview of the building blocks we'll need to construct this launcher let's go step by step through the process - I won't copy paste all the code here as the idea is to give a higher level picture. Any tasks mentioned below are linked to their read me page.
 </p>
 
+<h3>1. Launch the instances</h3>
+Our instances don't exist so logically we have to start with localhost - we can use tasks <a href="http://docs.ansible.com/ansible/ec2_module.html">"ec2"</a> to create an ec2 instance and <a href="http://docs.ansible.com/ansible/ec2_elb_lb_module.html">"ec2_elb_lb"</a> to create an elastic load balancer which we will configure momentarily. My EC2 instance is running Cent OS 6, just browse the Amazon Images (AMI's) and pick one. I've configured this into a "stack-launcher" role so the syntax is a lot cleaner, and any variables I need are in a main.yml file in the "vars" folder. Note that you don't need to only have a single main.yml that is simply the default, you can have as many as you like but you'll need to "include_vars: vars/credential_vars.yml" to do so.
 
-<pre><code class='swift'>
-	func printStuff(s: String) = {
-		println("Hello world!");
-	}
+<h3>2. Configure a Security Group</h3>
+We've created the launcher now and we will have a stack, but it wasn't till much later I realised we should have configured a security group to open up the correct ports. You can use the <a href="http://docs.ansible.com/ansible/ec2_group_module.html">"ec2_group"</a> module to open up ports 22 (so we can SSH into it), 80 and 443 to allow us to install OS updates and pull installables from the cloud.
+
+<h3>3. Export the newly created hosts</h3>
+Now that we've launched them with the correct security group we need to export the instance IP/DNS so that we can access it in the next step. Using the module <a href="">"add_host"</a> in conjunction with AWS CLI we can figure out the IP/DNS and register it ready for us to use.
+
+<h3>4. Connect to the instances and apply 'role'</h3>
+With the exported instance name we can use them as a host i.e. "host: my_ec2_instance" and the way I've setup my demo project is to apply the role "nginx". Inside the roles/nginx folder there are a set of tasks in the tasks folder that are used to setup the instance as if we were logged into it.
+
+Installing nginx is simple with the "yum" module since I've configured a CentOS image with the "state=present" tag, after configuring the right repository and using "service" to ensure it's running (state=started). This way if I run the playbook again, Ansible will check that nginx is installed and it's running. Neat!
+
+An application also lives here in <pre>/usr/share/nginx/html</pre> so using the <a href="http://docs.ansible.com/ansible/git_module.html">"git"</a> module I could very easily copy over a project hosted in the cloud and share some HTML app.
+
+Additionally you can copy pre-baked configuration files that you can copy over to the instance from the "files" directory of your role and use the "copy" task. I have stuck with the defaults for demonstration purposes but I've commented my copy tasks out and it's possible to have development versus production configurations for example.
+
+<h3>5. Optionally output the ELB DNS at the end!</h3>
+Once it's launched that's all great, however it would be nice to get the domain name of the load balancer so we can check it out straight away without logging into the AWS management console. In a nutshell you only need to filter out the ELB information using AWS CLI, parse that as a JSON to get the output you need in the variable directly, then use the <a href="http://docs.ansible.com/ansible/debug_module.html">"debug"</a> module to print it to the terminal so that you can view it (although you can see stdout and stderr using human_log.py, details in the project readme linked below). You should get some output like this at the end:
+
+<pre><code class='bash'>
+ok: [localhost] => {
+    "msg": "DONE! Access the stack at --> chuck-demo-elb-1234567890.eu-west-1.elb.amazonaws.com"
+}
 </code></pre>
+
+<p>
+There's so much more you can do, such as amending the security group afterwards to prevent connections to the internet to your instance and force traffic to go through your load balancer. To scale this up using an auto-scaling group is similar - there are modules to set your launch configuration and configure an auto-scaling group. You would need to instead create some user data to replicate the 'nginx' role on the instances, but other than that the process is very similar in a more controllable, repeatable manner!
+</p>
 
 <h2>Summary</h2>
 <p>
-	my summary.
+	In this post we briefly described what Ansible is, the core components and building blocks you'll need to write repeatable processes and went through the logical process of setting up a small AWS stack.
 </p>
 <p>
 A copy of the full solution is available from my Github account: <a href="https://github.com/chuckwired/ansible-demo/blob/master/chuck-demo.yml">chuckwired.</a>
