@@ -1,0 +1,99 @@
+# Ensure we get the nice features in /etc
+source /etc/bashrc
+
+[[ -s "$HOME/.profile" ]] && source "$HOME/.profile" # Load the default .profile
+
+function tabname {
+	printf "\e]1;$1\a"
+}
+
+function parseyaml {
+  ruby -e "require 'yaml';YAML.load_file('$1')"
+}
+
+export MAVEN_OPTS="-XX:MaxPermSize=1024M -Xmx2g -XX:ReservedCodeCacheSize=1g"
+
+#node version manager
+export NVM_DIR=~/.nvm
+source $(brew --prefix nvm)/nvm.sh
+nvm use v0.10.32
+
+[[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+export PATH=/usr/local/bin:$PATH
+export PATH=/usr/local/bin:$PATH
+export PATH=/usr/local/bin:$PATH
+export PATH=$PATH:/usr/local/sbin
+
+#Java Path
+export JAVA_HOME=$(/usr/libexec/java_home)
+
+#Java switcher
+function setjdk() {
+  if [ $# -ne 0 ]; then
+   removeFromPath '/System/Library/Frameworks/JavaVM.framework/Home/bin'
+   if [ -n "${JAVA_HOME+x}" ]; then
+    removeFromPath $JAVA_HOME
+   fi
+   export JAVA_HOME=`/usr/libexec/java_home -v $@`
+   export PATH=$JAVA_HOME/bin:$PATH
+  fi
+ }
+ function removeFromPath() {
+  export PATH=$(echo $PATH | sed -E -e "s;:$1;;" -e "s;$1:?;;")
+ }
+
+# Enable git auto-completion
+source /etc/git-completion.bash
+# System-wide .bashrc file for interactive bash(1) shells.
+if [ -z "$PS1" ]; then
+   return
+fi
+
+# Enable Docker console
+eval "$(docker-machine env default)"
+
+# Set git autocompletion and PS1 integration
+if [ -f $(brew --prefix)/etc/git-completion.bash ]; then
+  . $(brew --prefix)/etc/git-completion.bash
+fi
+GIT_PS1_SHOWDIRTYSTATE=true
+
+#Enable bash auto completion
+if [ -f $(brew --prefix)/etc/bash_completion ]; then
+    . $(brew --prefix)/etc/bash_completion
+fi
+
+alias __git_ps1="git branch 2>/dev/null | grep '*' | sed 's/* \(.*\)/(\1)/'"
+
+PS1='\u\[\033[m\]\[\033[1;31m\]:\[\033[m\]\[\033[34m\]\w\[\033[31m\]$(__git_ps1)\[\033[m\]\$ '
+
+# Make bash check its window size after a process completes
+shopt -s checkwinsize
+# Tell the terminal about the working directory at each prompt.
+if [ "$TERM_PROGRAM" == "Apple_Terminal" ] && [ -z "$INSIDE_EMACS" ]; then
+    update_terminal_cwd() {
+        # Identify the directory using a "file:" scheme URL,
+        # including the host name to disambiguate local vs.
+        # remote connections. Percent-escape spaces.
+	local SEARCH=' '
+	local REPLACE='%20'
+	local PWD_URL="file://$HOSTNAME${PWD//$SEARCH/$REPLACE}"
+	printf '\e]7;%s\a' "$PWD_URL"
+    }
+    PROMPT_COMMAND="update_terminal_cwd; $PROMPT_COMMAND"
+fi
+					
+
+#increase bash history and remove duplicates
+export HISTCONTROL=erasedups
+export HISTSIZE=10000
+shopt -s histappend
+
+#general alias commands
+alias ls="ls -G" 
+alias ll="ls -lh" 
+alias la="ll -a"
+#docker alias'
+alias domach="docker-machine"
+alias docamp="docker-compose"
+
