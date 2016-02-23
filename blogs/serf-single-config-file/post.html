@@ -1,0 +1,119 @@
+<p>
+<a href="https://www.serfdom.io/">Serf</a> is a fantastic lightweight technology that can help to orchestrate your infrastructure in the cloud such as dynamically updating a load balancer or backing up a database based on events, even within your Docker containers. Once you're finished playing with it and creating a proof of concept the time comes to integrate it and start automating that integration. This is where the trouble begins. Whilst the documentation exists on the <a href="https://www.serfdom.io/docs/agent/options.html">Serfdom official pages</a> it
+is perhaps too succinct and only provides two samples, neither of which was suitable for us to get going. This blog post aims to remedy this and provide you with some insight into; creating a single config file, adding a handler, hooking it up to your Serf agent, the seeding procedure we use and debugging to get your started.
+</p>
+
+<!-- more -->
+
+<h2>Creating the Config File</h2>
+<p> 
+Before creating the config file we need to know how to give a config file to the Serf agent. The easiest way to do this is via command line option:
+<pre><code class='bash'>
+serf agent -config-file=/etc/serf/myconfig.json
+</code></pre>
+As you may have noticed above, the config file is a <code>json</code> file. This makes it very easy to manipulate and create since it's widely implemented and very human-readable.
+</p>
+
+
+<pre><code class='javascript'>
+{
+    "node_name": "ip-10-30-40-50",
+    "protocol": 4,
+    "advertise": "10.30.40.50",
+    "bind": "0.0.0.0",
+    "encrypt_key": "",
+    "rpc_addr": "0.0.0.0:7373",
+    "log_level": "info"
+}
+</code></pre>
+
+<h2>Adding a Handler</h2>
+<p> 
+body
+</p>
+
+<pre><code class='javascript'>
+{
+    "node_name": "ip-10-30-40-50",
+    "protocol": 4,
+    "advertise": "10.30.40.50",
+    "bind": "0.0.0.0",
+    "encrypt_key": "",
+    "event_handlers" : [ 
+        "/etc/serf/handlers/serf_handler.py"
+    ],
+    "rpc_addr": "0.0.0.0:7373",
+    "log_level": "info"
+}
+</code></pre>
+
+<h2>Seeding your Cluster</h2>
+<p> 
+body
+</p>
+
+<pre><code class='javascript'>
+{
+    "node_name": "ip-10-30-40-50",
+    "protocol": 4,
+    "advertise": "10.30.40.50",
+    "bind": "0.0.0.0",
+    "encrypt_key": "",
+    "event_handlers" : [ 
+        "/etc/serf/handlers/serf_handler.py"
+    ],
+    "tags": {
+        "role": "rabbitmq",
+        "region": "us-east-1"
+    },
+    "rpc_addr": "0.0.0.0:7373",
+    "log_level": "info",
+    "start_join": [
+        "mesos-master-us-east-1-staging.plucky.io"
+    ]
+}
+</code></pre>
+
+
+<h2>Putting it all together</h2>
+<p>
+Taking all of the elements explained previous we can put together a configuration file that has the minimum of what we need, is easy to manipulate programmatically and looks something like the following:
+</p>
+
+<pre><code class='javascript'>
+{
+    "node_name": "ip-10-30-40-50",
+    "protocol": 4,
+    "advertise": "10.30.40.50",
+    "bind": "0.0.0.0",
+    "encrypt_key": "",
+    "event_handlers" : [ 
+        "/etc/serf/handlers/serf_handler.py"
+    ],
+    "tags": {
+        "role": "rabbitmq",
+        "region": "us-east-1"
+    },
+    "rpc_addr": "0.0.0.0:7373",
+    "log_level": "info",
+    "start_join": [
+        "mesos-master-us-east-1-staging.plucky.io"
+    ]
+}
+</code></pre>
+
+<h2>Debugging</h2>
+<p> 
+body
+</p>
+
+<pre><code class='swift'>
+func printStuff(s: String) = {
+	println("Hello world!");
+}
+</code></pre>
+
+<h2>Summary</h2>
+<p>
+my summary.
+</p>
