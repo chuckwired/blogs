@@ -6,14 +6,13 @@ is perhaps too succinct and only provides two samples, neither of which was suit
 <!-- more -->
 
 <h2>Creating the Config File</h2>
-<p> 
+<p>
 Before creating the config file we need to know how to give a config file to the Serf agent. The easiest way to do this is via command line option:
 <pre><code class='bash'>
 serf agent -config-file=/etc/serf/myconfig.json
 </code></pre>
-As you may have noticed above, the config file is a <code>json</code> file. This makes it very easy to manipulate and create since it's widely implemented and very human-readable.
+As you may have noticed above, the config file is a <code>json</code> file. This makes it very easy to manipulate and create since it's widely implemented and very human-readable. Below is the bare minimum set of options required for the config file.
 </p>
-
 
 <pre><code class='javascript'>
 {
@@ -27,9 +26,29 @@ As you may have noticed above, the config file is a <code>json</code> file. This
 }
 </code></pre>
 
+<p>
+Some of you may have noticed from the <code>node_name</code> that this example is from running in an AWS infrastructure, but the same rules still apply when running locally or on other platforms. Purposes of each of these options are as follows:
+<ul>
+  <li><b>node_name: </b>Name of your node, usually the host name for simplicity.</li>
+  <li><b>protocol: </b>Serf protocol version; non-essential but useful when you need to upgrade a long running cluster.</li>
+  <li><b>advertise: </b>The IP address other Serf nodes should contact you with.</li>
+  <li><b>bind: </b>We found that binding to 0.0.0.0 (all interfaces) was the best approach for portability. Default port is 7946.</li>
+  <li><b>encrypt_key: </b>Enables secure communications, can be left blank. Must be 16-bytes and base64 encoded. Recommended to use <code>serf keygen</code>.</li>
+  <li><b>rpc_addr: </b></li>
+  <li><b>log_level: </b>Self-explanatory - info is sufficient, debug giving more details and trace supplying the most.</li>
+</ul>
+
 <h2>Adding a Handler</h2>
-<p> 
-body
+<p>
+Now that we have a running configuration we should use Serf for what it was built for - reacting to events that occur throughout the cluster. Handlers are Serf's method of giving you an entry point to then react to events such as other members joining, leaving or failing. You would implement it like this:
+
+<pre><code class='javascript'>
+"event_handlers" : [
+  "/path/to/my/script.sh"
+]
+</code></pre>
+
+As you can infer from above, the path it is installed to doesn't actually matter although it is better to follow best practices and put it within the <code>/etc/serf/handlers</code> folder. If desired you could specify multiple handler files if you split functionality into several shell scripts for example. We prefer to use Python for this as it offers great readability and allows us to compose a more structured program, but you could easily use other langauages too. Below is what the config file would look like with our new Serf handler:
 </p>
 
 <pre><code class='javascript'>
@@ -39,7 +58,7 @@ body
     "advertise": "10.30.40.50",
     "bind": "0.0.0.0",
     "encrypt_key": "",
-    "event_handlers" : [ 
+    "event_handlers" : [
         "/etc/serf/handlers/serf_handler.py"
     ],
     "rpc_addr": "0.0.0.0:7373",
@@ -48,9 +67,17 @@ body
 </code></pre>
 
 <h2>Seeding your Cluster</h2>
-<p> 
-body
+<p>
+Now that we have a Serf agent that is setup correctly and has a handler reacting to events, the next step is to actually form a cluster. Borrowing some seeding concepts from Datastax Cassandra we setup three Serf agents to act as "seeds" and registered them to DNS names for simplicity. Using a DNS service will help significantly with this step. Simply add a <code>start_join</code> attribute like this:
 </p>
+
+<pre><code class='javascript'>
+"start_join": [
+  "www.serf-seed-1.com",
+  "www.serf-seed-2.com",
+  "www.serf-seed-3.com"
+]
+</code></pre>
 
 <pre><code class='javascript'>
 {
@@ -59,17 +86,18 @@ body
     "advertise": "10.30.40.50",
     "bind": "0.0.0.0",
     "encrypt_key": "",
-    "event_handlers" : [ 
+    "event_handlers" : [
         "/etc/serf/handlers/serf_handler.py"
     ],
     "tags": {
-        "role": "rabbitmq",
-        "region": "us-east-1"
+        "role": "database"
     },
     "rpc_addr": "0.0.0.0:7373",
     "log_level": "info",
     "start_join": [
-        "mesos-master-us-east-1-staging.plucky.io"
+        "www.serf-seed-1.com",
+        "www.serf-seed-2.com",
+        "www.serf-seed-3.com"
     ]
 }
 </code></pre>
@@ -87,24 +115,25 @@ Taking all of the elements explained previous we can put together a configuratio
     "advertise": "10.30.40.50",
     "bind": "0.0.0.0",
     "encrypt_key": "",
-    "event_handlers" : [ 
+    "event_handlers" : [
         "/etc/serf/handlers/serf_handler.py"
     ],
     "tags": {
-        "role": "rabbitmq",
-        "region": "us-east-1"
+        "role": "database"
     },
     "rpc_addr": "0.0.0.0:7373",
     "log_level": "info",
     "start_join": [
-        "mesos-master-us-east-1-staging.plucky.io"
+        "www.serf-seed-1.com",
+        "www.serf-seed-2.com",
+        "www.serf-seed-3.com"
     ]
 }
 </code></pre>
 
 <h2>Debugging</h2>
-<p> 
-body
+<p>
+Now that you've been given some insight in how to use a single file to setup your Serf agents I will finish off by giving you some concise handy hints to debug and troublshoot should you run into any issues attempting the above.
 </p>
 
 <pre><code class='swift'>
