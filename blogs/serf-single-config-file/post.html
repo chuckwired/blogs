@@ -34,7 +34,7 @@ Some of you may have noticed from the <code>node_name</code> that this example i
   <li><b>advertise: </b>The IP address other Serf nodes should contact you with.</li>
   <li><b>bind: </b>We found that binding to 0.0.0.0 (all interfaces) was the best approach for portability. Default port is 7946.</li>
   <li><b>encrypt_key: </b>Enables secure communications, can be left blank. Must be 16-bytes and base64 encoded. Recommended to use <code>serf keygen</code>.</li>
-  <li><b>rpc_addr: </b></li>
+  <li><b>rpc_addr: </b>Allows programmatic control of this Serf node, also used by the supplied Serf Cli.</li>
   <li><b>log_level: </b>Self-explanatory - info is sufficient, debug giving more details and trace supplying the most.</li>
 </ul>
 
@@ -79,30 +79,6 @@ Now that we have a Serf agent that is setup correctly and has a handler reacting
 ]
 </code></pre>
 
-<pre><code class='javascript'>
-{
-    "node_name": "ip-10-30-40-50",
-    "protocol": 4,
-    "advertise": "10.30.40.50",
-    "bind": "0.0.0.0",
-    "encrypt_key": "",
-    "event_handlers" : [
-        "/etc/serf/handlers/serf_handler.py"
-    ],
-    "tags": {
-        "role": "database"
-    },
-    "rpc_addr": "0.0.0.0:7373",
-    "log_level": "info",
-    "start_join": [
-        "www.serf-seed-1.com",
-        "www.serf-seed-2.com",
-        "www.serf-seed-3.com"
-    ]
-}
-</code></pre>
-
-
 <h2>Putting it all together</h2>
 <p>
 Taking all of the elements explained previous we can put together a configuration file that has the minimum of what we need, is easy to manipulate programmatically and looks something like the following:
@@ -136,13 +112,30 @@ Taking all of the elements explained previous we can put together a configuratio
 Now that you've been given some insight in how to use a single file to setup your Serf agents I will finish off by giving you some concise handy hints to debug and troublshoot should you run into any issues attempting the above.
 </p>
 
-<pre><code class='swift'>
-func printStuff(s: String) = {
-	println("Hello world!");
-}
-</code></pre>
+<h3>Handler execution errors</h3>
+<p>
+What this means is there's a problem with one of three things: the program to run the script cannot be found, the script itself cannot be found or there's an issue with the code in your script. The following may help:
+</p>
+
+<p>
+<ul>
+    <li>Ensure you specify the right extension or program at the top of your script. e.g. Name it <code>myscript.py</code> and add <code>#!/usr/bin/env python</code> at the top.</li>
+    <li>Specify the full path of your event handler and make sure to use double quotes. Double check your script is actually there!</li>
+    <li>I can't help you with script problems, test your script in isolation by running <code>/path/to/your/script.sh</code> and verify it works.</li>
+</ul>
+</p>
+
+<h3>Unable to join cluster</h3>
+<p>
+This indicates a problem reaching your seed nodes. You can try using direct IP addresses and checking that the hostnames you've used are reachable by running <code>host www.serf-seed-1.com</code> in your favourite terminal.
+</p>
 
 <h2>Summary</h2>
 <p>
-my summary.
+In this post we walked through the basics of a Serf configuration file, why they're needed and how to add the essentials such as seed nodes to bootstrap a cluster and a handler to perform your orchestration code. Finally I listed some common problems you may encounter attempting to setup your own Serf cluster and some diagnosis tips. This is only the tip of the iceberg and you can create more sophisticated setups that involves handlers for specific types of messages and enhancing your handlers to make use of the different tags.
+
+</p>
+
+<p>
+Best of luck with your setups - until next time, Chuck.
 </p>
