@@ -94,7 +94,7 @@ Once you're comfortable with the above you'll want to explore some more options 
 waitUntil {
 	def status = ""
 	try {
-		status = get_status_of_my_thing()
+		status = get_status_of_my_thing() // Could throw an error
 	} catch {
 		status = "NOT DONE"
 	}
@@ -108,7 +108,7 @@ waitUntil {
 
 // This isn't okay
 waitUntil {
-	def status = get_status_of_my_thing() // Error prone method
+	def status = get_status_of_my_thing() // Could throw an error
 	if(status == "DONE"){
 		return true
 	} else {
@@ -223,6 +223,7 @@ That wraps up all of the useful basic and advanced constructs that I've been usi
 	<li><a href="https://jenkins.io/doc/pipeline/steps/"><b>Pipeline docs</b></a>: the official Jenkins2 pipelines docs</li>
 	<li><a href="http://groovy-lang.org/documentation.html"><b>Groovy docs</b></a>: incorporate any other constructs I didn't mentioned like <code>switch/case</code></li>
 	<li><a href="https://support.cloudbees.com/hc/en-us/articles/204986450-Pipeline-How-to-manage-user-inputs"><b>Managing user inputs</b></a>: a blog post from Cloudbees that has some more detail than offered by the docs</li>
+	<li><a href="https://www.cloudbees.com/blog/top-10-best-practices-jenkins-pipeline-plugin"><b>Best practices</b></a>: another post on the Cloudbees blog, keep these in mind</li>
 	<li><a href="http://localhost:8080/script"><b>Jenkins script</b></a>: a shortcut to <code>localhost:8080/script</code> to access the Jenkins script sandbox if you're running it on your machine</li>
 </ul>
 
