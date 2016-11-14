@@ -1,5 +1,5 @@
 <p>
-The release of Jenkins2 put a huge emphasis on <a href="https://jenkins.io/2.0/#pipelines" target="_blank">pipelines</a> - a feature that Jenkins always had but wasn't the key highlight. This all changes with the default built in pipelines that help you write your pipelines in Groovy as code, check it into SCM and visualise your pipelines from a single pipeline job type. It provides huge improvements over the "workflow" view that used to exist, but the documentation doesn't come with a rich set of example.
+The release of Jenkins2 put a huge emphasis on <a href="https://jenkins.io/2.0/#pipelines" target="_blank">pipelines</a> - a feature that Jenkins always had but wasn't the key highlight. This all changes with the default built in pipelines that help you write your pipelines in Groovy as code, check it into SCM and visualise your pipelines from a single pipeline job type. It provides huge improvements over the "workflow" view that used to exist, but the documentation doesn't come with a rich set of examples.
 </p>
 <p>
 In this post I'm going to show you the key building blocks using Groovy, complete with code snippets and hopefully guide you on your way to true DevOps style pipelines - your pipeline as code.
@@ -86,39 +86,147 @@ if (some_condition == true){
 Once you're comfortable with the above you'll want to explore some more options to make your pipelines more robust and give some more sophisticated flow control options.
 </p>
 
-<h3>if/else</h3>
-<p>Now we're getting some flow control.</p>
+<h3>waitUntil</h3>
+<p>Keep running the body until it returns true; will only continue if the body throws no errors AND returns false.</p>
 
 <pre><code class='groovy'>
-if (some_condition == true){
-    echo "it was true!"
-} else { // This HAS to be on the same line!
-    echo "it wasn't true :disappointed:"
+// This is okay
+waitUntil {
+	def status = ""
+	try {
+		status = get_status_of_my_thing()
+	} catch {
+		status = "NOT DONE"
+	}
+
+	if (status == "DONE"){
+		return true
+	} else {
+		return false
+	}
+}
+
+// This isn't okay
+waitUntil {
+	def status = get_status_of_my_thing() // Error prone method
+	if(status == "DONE"){
+		return true
+	} else {
+		throw SomeError
+	}
 }
 </code></pre>
 
-<h3>if/else</h3>
-<p>Now we're getting some flow control.</p>
+<h3>timeout</h3>
+<p>This is good to pair with the <code>waitUntil</code> so you're not getting pipelines that never finish.</p>
 
 <pre><code class='groovy'>
-if (some_condition == true){
-    echo "it was true!"
-} else { // This HAS to be on the same line!
-    echo "it wasn't true :disappointed:"
+timeout(1){
+    echo "Should execute within approximately 1 minute"
+}
+
+// Override units
+timeout(time: 10, unit: "SECONDS"){
+    sleep 100
+    echo "I should timeout"
+}
+
+/**
+Available units:
+    - NANOSECONDS
+    - MICROSECONDS
+    - MILLISECONDS
+    - SECONDS
+    - MINUTES
+    - HOURS
+    - DAYS
+
+Ideally don't use hours, and definitely try not to use DAYS!
+*/
+</code></pre>
+
+<h3>Looping</h3>
+<p>I find the looping syntax strange, but it's easy enough to remember.</p>
+
+<pre><code class='groovy'>
+def mylist = [
+    "item 1",
+    "item 2",
+    "item 3"
+]
+
+/**
+Will output the following:
+item 1
+item 2
+item 3
+*/
+for (String item : mylist){ // Would assume you can type cast here if desired
+    echo item
 }
 </code></pre>
+
+<h3>Wrapper</h3>
+<p>This is more of a hint; you can wrap some interesting functionality to make your pipeline more readable as such.</p>
+
+<pre><code class='groovy'>
+def build_a_job(param1, param2, param3){
+    build job:'some-other-job', parameters: [
+        string(name: 'parameter 1', value: param1),
+        booleanParam(name: 'DO_SOMETHING', value: param2),
+        string(name: 'my choice parameter with spaces', value: param3)
+    ]
+}
+
+// Now I can call the job in my stages
+stage "Stage 1: build some-other-job with first set of params"
+build_a_job("x", "y", "z")
+
+stage "Stage 2: build some-other-job with second set of params"
+build_a_job("a", "b", "c")
+</code></pre>
+
+<h3>User input</h3>
+<p>I've only experimented with this briefly, but this is useful if you need to give the user some control or the option to abort the pipeline.</p>
+
+<pre><code class='groovy'>
+//Yes or No input
+echo "Waiting for input..."
+input "Are you sure you want to echo random stuff?"
+echo "echo random stuff!"
+
+//Textual inputs
+def userInput = input(
+    id: 'userInput', message: 'What are you replicating again?', parameters: [
+        [$class: 'TextParameterDefinition', defaultValue: 'staging', description: 'Source', name: 'source'],
+        [$class: 'TextParameterDefinition', defaultValue: 'preproduction', description: 'Target', name: 'target']
+    ]
+)
+
+echo "For key [source] I got: [" + userInput['source'] + "]"
+if (userInput['target'] == "preproduction"){
+    echo "You used the default you lazy tomato!"
+} else {
+    echo "Wow, I didn't think you'd enter " + userInput['target'] + "!"
+}
+</code></pre>
+
+<p>Your user will be able to see these options like so when they hover over the stage containing your input clause:</p>
+<img src="https://cloud.githubusercontent.com/assets/7658988/20263221/8cae9936-aa5d-11e6-8036-d90d91256961.png">
 
 <h2>Useful links and tools</h2>
 <p>
-body
+That wraps up all of the useful basic and advanced constructs that I've been using in my pipelines so far. There are a few others constructs that I've used here and there but the majority of the cases you'll have, at least in the early stages, should be covered if you use the ones listed above. Below is a short list of useful reading and tool(s) you may find useful on your journey onwards to pipeline nirvana.
 </p>
-<pre><code class='swift'>
-	func printStuff(s: String) = {
-		println("Hello world!");
-	}
-</code></pre>
+
+<ul>
+	<li><a href="https://jenkins.io/doc/pipeline/steps/"><b>Pipeline docs</b></a>: the official Jenkins2 pipelines docs</li>
+	<li><a href="http://groovy-lang.org/documentation.html"><b>Groovy docs</b></a>: incorporate any other constructs I didn't mentioned like <code>switch/case</code></li>
+	<li><a href="https://support.cloudbees.com/hc/en-us/articles/204986450-Pipeline-How-to-manage-user-inputs"><b>Managing user inputs</b></a>: a blog post from Cloudbees that has some more detail than offered by the docs</li>
+	<li><a href="http://localhost:8080/script"><b>Jenkins script</b></a>: a shortcut to <code>localhost:8080/script</code> to access the Jenkins script sandbox if you're running it on your machine</li>
+</ul>
 
 <h2>Summary</h2>
 <p>
-	my summary.
+In this blog post I highlighted a variety of techniques you can implement in your Jenkins pipelines written entirely in Groovy. A variety of basic constructs help you get started and running building your own basic pipelines, and the advanced constructs section helps to get you to the next level and beyond with more robust functionality. If you have any questions or suggestions to add in, or even expand onto another post then please send me your feedback by <a href="mailto:charlesr@cakesolutions.net">e-mail<a/> or <a href="https://twitter.com/chuckwired">Twitter</a>.
 </p>
