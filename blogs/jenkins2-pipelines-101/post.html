@@ -190,6 +190,8 @@ build_a_job("a", "b", "c")
 <p>I've only experimented with this briefly, but this is useful if you need to give the user some control or the option to abort the pipeline.</p>
 
 <pre><code class='groovy'>
+// To view input boxes in the UI, it must be in a stage
+stage "stage 0: my sandbox"
 //Yes or No input
 echo "Waiting for input..."
 input "Are you sure you want to echo random stuff?"
@@ -203,6 +205,7 @@ def userInput = input(
     ]
 )
 
+stage "stage 1: other sandbox"
 echo "For key [source] I got: [" + userInput['source'] + "]"
 if (userInput['target'] == "preproduction"){
     echo "You used the default you lazy tomato!"
