@@ -35,17 +35,6 @@ node('optional tag of your slave'){
 }
 </code></pre>
 
-<h3>Build a job</h3>
-<p>Probably one of the first things you'll want to do, build a job you've already specified on your Jenkins installation.</p>
-
-<pre><code class='groovy'>
-build job:'some-other-job', parameters: [
-    string(name: 'parameter 1', value: "value1"),
-    booleanParam(name: 'DO_SOMETHING', value: true),
-    string(name: 'my choice parameter', value: some_function())
-]
-</code></pre>
-
 <h3>Functions and variables</h3>
 <p>Now we're getting to some real pipelines as code; functions and variables are defined very similarly:</p>
 
@@ -69,6 +58,17 @@ def my_int_var = my_second_function(2, 2)
 </code></pre>
 
 <p><b>Tip</b>: You can define functions outside of your <code>node</code> block, but I've had some difficulty defining variables outside. If you've had better luck, please please <i>please</i> drop me a comment!</p>
+
+<h3>Build a job</h3>
+<p>Probably one of the first things you'll want to do, build a job you've already specified on your Jenkins installation.</p>
+
+<pre><code class='groovy'>
+build job:'some-other-job', parameters: [
+    string(name: 'parameter 1', value: "value1"),
+    booleanParam(name: 'DO_SOMETHING', value: true),
+    string(name: 'my choice parameter', value: some_function())
+]
+</code></pre>
 
 <h3>if/else</h3>
 <p>Now we're getting some flow control.</p>
@@ -126,9 +126,9 @@ timeout(1){
 }
 
 // Override units
-timeout(time: 10, unit: "SECONDS"){
-    sleep 100
-    echo "I should timeout"
+timeout(time: 300, unit: "SECONDS"){
+		wait_until_environment_is_rebuilt("preprod")
+    echo "Hurray, environment is rebuilt!"
 }
 
 /**
