@@ -95,3 +95,5 @@ alias la="ll -a"
 alias domach="docker-machine"
 alias docamp="docker-compose"
 
+# ensure ssh keys are added
+ssh-add
