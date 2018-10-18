@@ -49,9 +49,6 @@ if [ -z "$PS1" ]; then
    return
 fi
 
-# Enable Docker console
-eval "$(docker-machine env default)"
-
 # Set git autocompletion and PS1 integration
 if [ -f $(brew --prefix)/etc/git-completion.bash ]; then
   . $(brew --prefix)/etc/git-completion.bash

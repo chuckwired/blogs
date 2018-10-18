@@ -1,6 +1,12 @@
 ## Quick n Dirty Instructions
 
 ```
+# get brew
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+# install the usual
+brew install nvm tmux
+
 # setup git completion
 sudo cp git-completion.bash /etc/git-completion.bash
 
