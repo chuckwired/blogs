@@ -93,6 +93,7 @@ shopt -s histappend
 alias ls="ls -G" 
 alias ll="ls -lh" 
 alias la="ll -a"
+
 #docker alias'
 alias domach="docker-machine"
 alias docamp="docker-compose"
